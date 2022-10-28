@@ -1,0 +1,99 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Challenge
+
+## Section
+
+## Test
+
+```elixir
+defmodule Redactor do
+  def redact(map, list, redact) do
+    Enum.reduce(map, %{}, fn
+      {k, v}, acc when is_map(v) ->
+        Map.put(acc, k, redact(v, list, redact))
+
+      {k, v}, acc ->
+        if k in list do
+          Map.put(acc, k, redact)
+        else
+          Map.put(acc, k, v)
+        end
+    end)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Redactor, <<70, 79, 82, 49, 0, 0, 8, ...>>, {:redact, 3}}
+```
+
+```elixir
+ExUnit.start(auto_run: false)
+
+defmodule RedactorTest do
+  use ExUnit.Case, async: false
+
+  describe "redact/3" do
+    test "should redact parameters" do
+      map = %{name: "John Doe", cpf: "12345678900"}
+
+      result = Redactor.redact(map, [:cpf], "*")
+
+      assert result == %{name: "John Doe", cpf: "*"}
+    end
+
+    test "works with stringed keys" do
+      map = %{"name" => "John Doe", "cpf" => "12345678900"}
+
+      result = Redactor.redact(map, ["cpf"], "*")
+
+      assert result == %{"name" => "John Doe", "cpf" => "*"}
+    end
+
+    test "deep redaction" do
+      map = %{name: "John Doe", data: %{cpf: "12345678900"}}
+
+      result = Redactor.redact(map, [:cpf], "*")
+
+      assert result == %{name: "John Doe", data: %{cpf: "*"}}
+    end
+
+    test "works with more than one field" do
+      map = %{name: "John Doe", cpf: "12345678900", encrypted_password: "MTIzNDU2"}
+
+      result = Redactor.redact(map, [:cpf, :encrypted_password], "*")
+
+      assert result == %{name: "John Doe", cpf: "*", encrypted_password: "*"}
+    end
+
+    test "replacer could be anything" do
+      map = %{name: "John Doe", cpf: "12345678900"}
+
+      result = Redactor.redact(map, [:cpf], "🔥")
+
+      assert result == %{name: "John Doe", cpf: "🔥"}
+    end
+  end
+end
+
+ExUnit.run()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+.....
+Finished in 0.00 seconds (0.00s async, 0.00s sync)
+5 tests, 0 failures
+
+Randomized with seed 678272
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%{excluded: 0, failures: 0, skipped: 0, total: 5}
+```
